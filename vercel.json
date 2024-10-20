@@ -1,0 +1,55 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server/api/src/api/**/*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "app/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "."
+      }
+    }
+  ],
+  "public": "app/public",
+  "routes": [
+    {
+      "src": "^/api/auth/(login|register|reset-password|otp)/?$",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        "Access-Control-Allow-Headers": "*"
+      },
+      "dest": "/server/api/src/api/auth/$1/index.js"
+    },
+    {
+      "src": "^/api/(messages|users)/([^/]+)/?$",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        "Access-Control-Allow-Headers": "*"
+      },
+      "dest": "/server/api/src/api/$1/[id]/index.js"
+    },
+    {
+      "src": "^/api/users/([^/]+)/([^/]+)/?$",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        "Access-Control-Allow-Headers": "*"
+      },
+      "dest": "/server/api/src/api/users/[id]/$2/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        "Access-Control-Allow-Headers": "*"
+      },
+      "dest": "/app/public/$1"
+    }
+  ]
+}

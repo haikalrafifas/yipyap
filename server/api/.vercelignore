@@ -1,0 +1,23 @@
+# Directories
+/.vscode
+/.idea
+/node_modules
+/tests
+/dist
+/build
+/coverage
+.vercel
+
+# Confidential Files
+.DS_Store
+.env
+*.sql
+
+# Metadatas
+.eslintrc.json
+.nvmrc
+LICENSE
+README.MD
+
+# Etc.
+*.log

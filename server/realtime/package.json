@@ -1,0 +1,19 @@
+{
+  "name": "yipyap-realtime",
+  "version": "1.0.0",
+  "description": "YipYap Realtime Service.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "realtime"
+  ],
+  "author": "haikalrafifas",
+  "license": "MIT",
+  "dependencies": {
+    "node-fetch": "2",
+    "ws": "^8.18.0"
+  }
+}
