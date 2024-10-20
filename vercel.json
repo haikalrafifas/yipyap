@@ -13,7 +13,6 @@
       }
     }
   ],
-  "public": "app/public",
   "routes": [
     {
       "src": "^/api/auth/(login|register|reset-password|otp)/?$",
