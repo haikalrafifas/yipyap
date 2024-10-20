@@ -1,6 +1,6 @@
-# BuzzerGD Realtime Service
+# YipYap Realtime Service
 
-A realtime pub-sub service for BuzzerGD application. It handles published data and directs it to both app service and frontend clients (webhook).
+A realtime pub-sub service for YipYap application. It handles published data and directs it to both app service and frontend clients (webhook).
 
 ## Installation
 
