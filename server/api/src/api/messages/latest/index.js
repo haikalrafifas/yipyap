@@ -1,79 +1,103 @@
 import pool from "../../../database/connection";
-import userCollection from "../../../database/collections/userCollection";
+import messageCollection from "../../../database/collections/messageCollection";
 import authMiddleware from "../../../middlewares/authMiddleware";
 
 export default async function handler(req, res) {
   const token = authMiddleware(req, res);
-  const sourceUsername = token?.username;
-  const username = req.url.split('/')[3];
-
-  if (sourceUsername !== username) {
-    return res.status(401).json({
-      status: 401,
-      message: 'The \'see others\' feature is not implemented yet!',
-    });
-  }
+  const username = token?.username;
 
   switch (req.method) {
     case 'GET':
+      const maxRows = 100;
       try {
-        const { rows } = await pool.query(`
+        const { rows: user } = await pool.query(`
           SELECT * FROM users WHERE username = $1
           `,
           [username],
         );
 
-        if (rows.length === 0) {
+        if (user.length === 0) {
           return res.status(404).json({
             status: 404,
             message: 'User not found!',
           });
         }
 
+        const userId = user[0].id;
+
+        const { rows } = await pool.query(`
+          SELECT 
+            m.id, 
+            u_from.username AS from, 
+            u_to.username AS to, 
+            m.message, 
+            m.created_at,
+            CASE 
+              WHEN m.from = $1 THEN u_to.name
+              WHEN m.to = $1 THEN u_from.name
+              ELSE NULL
+            END AS name, 
+            CASE 
+              WHEN m.from = $1 THEN u_to.description
+              WHEN m.to = $1 THEN u_from.description
+              ELSE NULL
+            END AS description, 
+            CASE 
+              WHEN m.from = $1 THEN u_to.image
+              WHEN m.to = $1 THEN u_from.image
+              ELSE NULL
+            END AS image, 
+            COALESCE(u_from.is_online::text, 'false') AS is_online, 
+            COALESCE(u_from.last_seen::text, 'N/A') AS last_seen, 
+            m.to_group, 
+            CASE 
+              WHEN m.from = $1 THEN u_to.username
+              WHEN m.to = $1 THEN u_from.username
+              ELSE NULL
+            END AS room
+          FROM messages m
+          JOIN users u_from ON m.from = u_from.id
+          JOIN users u_to ON m.to = u_to.id
+          WHERE (m.from = $1 OR m.to = $1) AND m.to_group = false
+      
+          UNION ALL
+      
+          SELECT 
+            m.id, 
+            u_from.username AS from, 
+            g.groupname AS to, 
+            m.message, 
+            m.created_at, 
+            g.name, 
+            g.description, 
+            g.image, 
+            NULL::text AS is_online, 
+            NULL::text AS last_seen, 
+            true AS to_group, 
+            NULL AS room
+          FROM messages m
+          JOIN users u_from ON m.from = u_from.id
+          JOIN groups g ON m.to = g.id
+          JOIN group_members gm ON g.id = gm.group_id
+          WHERE gm.user_id = $1 AND m.to_group = true
+      
+          ORDER BY created_at DESC
+          LIMIT $2;
+      `, [userId, maxRows]);
+
         return res.status(200).json({
-          message: 'Successfully get user data!',
-          data: userCollection.single(rows[0]),
+          status: 200,
+          message: 'Successfully get latest user messages!',
+          data: messageCollection.latest(rows, username),
         });
       } catch (error) {
         console.error(error);
         return res.status(500).json({
           status: 500,
-          message: 'Error while retrieving user data!',
+          message: 'Error while retrieving latest user messages!',
         });
       }
       break;
-
-
-
-    // case 'GET':
-    //   // Get unit details
-    //   const maxRows = 6;
-
-    //   try {
-    //     // Fetch 6 latest data
-    //     const { rows } = await pool.query(`
-    //       SELECT * FROM units u
-    //         JOIN unit_status us ON u.id=us.unit_id
-    //         LEFT JOIN unit_messages um ON u.id=um.unit_id
-    //         WHERE u.device_id=$1
-    //         ORDER BY um.timestamp DESC
-    //         LIMIT ${maxRows}`,
-    //       [device_id],
-    //     );
-
-    //     if (rows.length === 0) {
-    //       return res.status(404).json({ error: 'Unit not found!' });
-    //     }
-
-    //     res.status(200).json({
-    //       message: 'Successfully get a unit!',
-    //       data: unitCollection.complete(rows),
-    //     });
-    //   } catch (error) {
-    //     console.error(error);
-    //     res.status(500).json({ error: 'Error fetching a unit!' });
-    //   }
-    //   break;
 
 
 

@@ -1,79 +1,61 @@
-import pool from "../../../database/connection";
-import userCollection from "../../../database/collections/userCollection";
-import authMiddleware from "../../../middlewares/authMiddleware";
+const { parse } = require('url');
+import pool from "../../../../database/connection";
+import messageCollection from "../../../../database/collections/messageCollection";
+import authMiddleware from "../../../../middlewares/authMiddleware";
 
 export default async function handler(req, res) {
   const token = authMiddleware(req, res);
-  const sourceUsername = token?.username;
-  const username = req.url.split('/')[3];
+  const username = token?.username;
 
-  if (sourceUsername !== username) {
-    return res.status(401).json({
-      status: 401,
-      message: 'The \'see others\' feature is not implemented yet!',
-    });
-  }
+  const { pathname } = parse(req.url, true);
+  const peername = pathname.split('/')[4];
 
   switch (req.method) {
     case 'GET':
+      const maxRows = 100;
       try {
-        const { rows } = await pool.query(`
-          SELECT * FROM users WHERE username = $1
+        const { rows: user } = await pool.query(`
+          SELECT * FROM users WHERE username IN ($1, $2)
           `,
-          [username],
+          [username, peername],
         );
 
-        if (rows.length === 0) {
+        if (user.length !== 2) {
           return res.status(404).json({
             status: 404,
-            message: 'User not found!',
+            message: 'Personal chat room not found!',
           });
         }
 
+        const userId = user.find(user => user.username === username).id;
+        const peerId = user.find(user => user.username === peername).id;
+
+        const { rows } = await pool.query(`
+          SELECT
+            m.*, 
+            u_from.username as from_username,
+            u_to.username as to_username
+          FROM messages m 
+          JOIN users u_from ON m.from = u_from.id
+          JOIN users u_to ON m.to = u_to.id
+          WHERE m.from IN ($1, $2) AND m.to IN ($1, $2) AND to_group = false
+          ORDER BY m.created_at DESC
+          LIMIT $3
+      `, [userId, peerId, maxRows]);
+
         return res.status(200).json({
-          message: 'Successfully get user data!',
-          data: userCollection.single(rows[0]),
+          status: 200,
+          message: 'Successfully get user messages!',
+          data: messageCollection.each(rows),
         });
       } catch (error) {
         console.error(error);
         return res.status(500).json({
           status: 500,
-          message: 'Error while retrieving user data!',
+          message: 'Error while retrieving user messages!',
         });
       }
       break;
-
-
-
-    // case 'GET':
-    //   // Get unit details
-    //   const maxRows = 6;
-
-    //   try {
-    //     // Fetch 6 latest data
-    //     const { rows } = await pool.query(`
-    //       SELECT * FROM units u
-    //         JOIN unit_status us ON u.id=us.unit_id
-    //         LEFT JOIN unit_messages um ON u.id=um.unit_id
-    //         WHERE u.device_id=$1
-    //         ORDER BY um.timestamp DESC
-    //         LIMIT ${maxRows}`,
-    //       [device_id],
-    //     );
-
-    //     if (rows.length === 0) {
-    //       return res.status(404).json({ error: 'Unit not found!' });
-    //     }
-
-    //     res.status(200).json({
-    //       message: 'Successfully get a unit!',
-    //       data: unitCollection.complete(rows),
-    //     });
-    //   } catch (error) {
-    //     console.error(error);
-    //     res.status(500).json({ error: 'Error fetching a unit!' });
-    //   }
-    //   break;
 
 
 

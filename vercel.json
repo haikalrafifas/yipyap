@@ -1,54 +1,46 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "server/api/src/api/**/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "app/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "."
+    "version": 2,
+    "builds": [
+      {
+        "src": "app/package.json",
+        "use": "@vercel/static-build",
+        "config": {
+          "distDir": "."
+        }
+      },
+      {
+        "src": "server/api/src/api/**/*.js",
+        "use": "@vercel/node"
       }
-    }
-  ],
-  "routes": [
-    {
-      "src": "^/api/auth/(login|register|reset-password|otp)/?$",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-        "Access-Control-Allow-Headers": "*"
+    ],
+    "routes": [
+      {
+        "src": "^/api/auth/(login|register|reset-password|otp)/?$",
+        "dest": "/server/api/src/api/auth/$1/index.js"
       },
-      "dest": "/server/api/src/api/auth/$1/index.js"
-    },
-    {
-      "src": "^/api/(messages|users)/([^/]+)/?$",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-        "Access-Control-Allow-Headers": "*"
+      {
+        "src": "^/api/messages/latest/?$",
+        "dest": "/server/api/src/api/messages/latest/index.js"
       },
-      "dest": "/server/api/src/api/$1/[id]/index.js"
-    },
-    {
-      "src": "^/api/users/([^/]+)/([^/]+)/?$",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-        "Access-Control-Allow-Headers": "*"
+      {
+        "src": "^/api/messages/(personal|group)/([^/]+)/?$",
+        "dest": "/server/api/src/api/messages/$1/[id]/index.js"
       },
-      "dest": "/server/api/src/api/users/[id]/$2/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-        "Access-Control-Allow-Headers": "*"
+      {
+        "src": "^/api/users/([^/]+)/([^/]+)/?$",
+        "dest": "/server/api/src/api/users/[id]/$2/index.js"
       },
-      "dest": "/app/public/$1"
-    }
-  ]
-}
+      {
+        "src": "^/api/users/([^/]+)/?$",
+        "dest": "/server/api/src/api/users/[id]/index.js"
+      },
+      {
+        "src": "/assets/(.*)",
+        "dest": "/app/dist/assets/$1"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "/app/dist/index.html"
+      }
+    ]
+  }
